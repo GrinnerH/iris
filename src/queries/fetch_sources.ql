@@ -10,4 +10,5 @@ where
   isGPTDetectedSource(node)
 select
   node.toString() as node_str,
-  node.getLocation() as loc
+
+   node.getLocation().toString() as location
