@@ -1,11 +1,13 @@
 import cpp
 
-from
-  File f
-where
-  f.isSourceFile()
+/**
+ * Collect locations of classes/structs/unions defined in source code.
+ * Uses qualified names so results remain clear inside namespaces.
+ */
+from Class c
+where c.fromSource()
 select
-  "Global" as name,
-  f.getRelativePath() as file,
-  1 as start_line,
-  f.getNumberOfLines() as end_line
+  c.getQualifiedName() as name,
+  c.getLocation().getFile().getRelativePath() as file_path,
+  c.getLocation().getStartLine() as start_line,
+  c.getLocation().getEndLine() as end_line

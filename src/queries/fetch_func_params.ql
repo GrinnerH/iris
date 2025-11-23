@@ -1,35 +1,33 @@
 import cpp
 
-bindingset[f]
+/**
+ * Capture functions that have parameters, recording their signature and parameter types.
+ */
 string fullSignature(Function f) {
-  result = f.getReturnType().toString() + " " + f.getName() + "(" +
+  result = f.getType().toString() + " " + f.getQualifiedName() + "(" +
     concat(Parameter p |
       p.getFunction() = f |
       p.getType().toString() + " " + p.getName(), ", " order by p.getIndex() asc) + ")"
 }
 
-bindingset[f]
 string paramTypes(Function f) {
   result = concat(Parameter p |
     p.getFunction() = f |
     p.getType().toString(), ";" order by p.getIndex() asc)
 }
 
-bindingset[f]
 string getDocString(Function f) { result = "" }
 
-from
-  Function method
+from Function method
 where
   method.fromSource() and
-  not method.hasNoParameters()
+  method.getNumberOfParameters() > 0
 select
-  method.getFile().getRelativePath() as package,
-  "Global" as clazz,
+  method.getFile().getRelativePath() as file_path,
   method.getName() as func,
   fullSignature(method) as full_signature,
-  method.getSignature() as internal_signature,
+  method.getType().toString() as internal_signature,
   method.getLocation().toString() as location,
   paramTypes(method) as parameter_types,
-  method.getReturnType().toString() as return_type,
+  method.getType().toString() as return_type,
   getDocString(method) as doc

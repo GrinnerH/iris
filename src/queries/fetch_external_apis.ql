@@ -1,29 +1,45 @@
 import cpp
 
+/**
+ * Identify calls to external APIs in the C/C++ code base.
+ * Java-specific reflection helpers have been removed in favor of C++ APIs.
+ */
 predicate isExternalCall(FunctionCall c) {
   // Skip obvious test helpers; keep libc-style memory operations.
   not c.getTarget().hasName("assert") and
   not c.getTarget().getQualifiedName().matches("testing::%")
 }
 
-bindingset[f]
+/**
+ * Build a readable signature for the target function.
+ */
 string fullSignature(Function f) {
-  result = f.getReturnType().toString() + " " + f.getName() + "(" +
+  result = f.getType().toString() + " " + f.getQualifiedName() + "(" +
     concat(Parameter p |
       p.getFunction() = f |
       p.getType().toString() + " " + p.getName(), ", " order by p.getIndex() asc) + ")"
 }
 
-bindingset[f]
+/**
+ * Collect semicolon separated parameter type names.
+ */
 string paramTypes(Function f) {
   result = concat(Parameter p |
     p.getFunction() = f |
     p.getType().toString(), ";" order by p.getIndex() asc)
 }
 
-string isStaticAsString(Function f) { result = "false" }
+/**
+ * Represent whether the function is static as a string.
+ */
+string isStaticAsString(Function f) {
+  result = "true" and exists(MemberFunction m | m = f and m.isStatic()) or
+  result = "false" and not exists(MemberFunction m | m = f and m.isStatic())
+}
 
-bindingset[f]
+/**
+ * Placeholder for a documentation string.
+ */
 string getDocString(Function f) { result = "" }
 
 from
@@ -34,14 +50,13 @@ where
   isExternalCall(api)
 select
   api as callstr,
-  api.getFile().getRelativePath() as package,
-  "Global" as clazz,
+  api.getFile().getRelativePath() as file_path,
   fullSignature(target) as full_signature,
-  target.getSignature() as internal_signature,
+  target.getType().toString() as internal_signature,
   target as func,
   isStaticAsString(target) as is_static,
   api.getFile() as file,
   api.getLocation().toString() as location,
   paramTypes(target) as parameter_types,
-  target.getReturnType().toString() as return_type,
+  target.getType().toString() as return_type,
   getDocString(target) as doc
