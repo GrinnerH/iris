@@ -7,12 +7,7 @@ predicate isExternalCall(FunctionCall c) {
 }
 
 bindingset[f]
-string fullSignature(Function f) {
-  result = f.getReturnType().toString() + " " + f.getName() + "(" +
-    concat(Parameter p |
-      p.getFunction() = f |
-      p.getType().toString() + " " + p.getName(), ", " order by p.getIndex() asc) + ")"
-}
+string fullSignature(Function f) { result = f.getType().toString() }
 
 bindingset[f]
 string paramTypes(Function f) {
@@ -34,14 +29,13 @@ where
   isExternalCall(api)
 select
   api as callstr,
-  api.getFile().getRelativePath() as package,
-  "Global" as clazz,
+  api.getFile().getRelativePath() as file_path,
   fullSignature(target) as full_signature,
-  target.getSignature() as internal_signature,
+  target.getType().toString() as internal_signature,
   target as func,
   isStaticAsString(target) as is_static,
   api.getFile() as file,
   api.getLocation().toString() as location,
   paramTypes(target) as parameter_types,
-  target.getReturnType().toString() as return_type,
+  target.getType().toString() as return_type,
   getDocString(target) as doc
