@@ -5,9 +5,11 @@ import models.config as config
 from utils.mylogger import MyLogger
 import os
 import tqdm
+from dotenv import load_dotenv
 
 class LLM:
     def __init__(self, model_name, logger: MyLogger, model_name_map, **kwargs):
+        load_dotenv()
         if logger is None:
             self.log =lambda x: print(x)
         else:

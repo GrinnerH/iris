@@ -14,11 +14,13 @@ import random
 import requests
 from tqdm import tqdm
 from tqdm.contrib.concurrent import thread_map
+from dotenv import load_dotenv
 
 THIS_SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 IRIS_ROOT_DIR = os.path.abspath(f"{THIS_SCRIPT_DIR}/../")
 sys.path.append(IRIS_ROOT_DIR)
 
+load_dotenv()
 from src.config import CODEQL_DIR, CODEQL_DB_PATH, PACKAGE_MODULES_PATH, OUTPUT_DIR, ALL_METHOD_INFO_DIR, PROJECT_SOURCE_CODE_DIR, CVES_MAPPED_W_COMMITS_DIR, CODEQL_QUERY_VERSION
 
 
@@ -66,6 +68,8 @@ class SAPipeline:
             query: str,
             run_id: str = "default",
             llm: str = "gpt-4",
+            cve_id: str = None,
+            cwe_id_override: str = None,
             label_api_batch_size: int = 30,
             label_func_param_batch_size: int = 50,
             num_threads: int = 3,
@@ -147,8 +151,10 @@ class SAPipeline:
                 self.master_logger.info(f"Processing {self.project_name} (Query: {self.query}, Trial: {self.run_id})...")
                 self.master_logger.error(f"==> Unknown query `{self.query}`; aborting")
             raise Exception(f"Unknown query `{self.query}`; aborting")
-        self.cwe_id = QUERIES[self.query]["cwe_id"]
-        self.cve_id = project_name.split("_")[3]
+        self.cwe_id = cwe_id_override if cwe_id_override is not None else QUERIES[self.query]["cwe_id"]
+        parts = project_name.split("_")
+        auto_cve = parts[3] if len(parts) > 3 and parts[3].startswith("CVE-") else None
+        self.cve_id = cve_id if cve_id is not None else auto_cve
 
         # Load some basic information, such as commits and fixes related to the CVE
         self.project_source_code_dir = f"{PROJECT_SOURCE_CODE_DIR}/{self.project_name}"
@@ -174,8 +180,11 @@ class SAPipeline:
         self.project_output_path = f"{OUTPUT_DIR}/{self.project_name}/{self.run_id}"
 
         # Setup codeql database path
-        self.project_codeql_db_path = f"{CODEQL_DB_PATH}/{self.project_name}/db-cpp"
-        if not os.path.exists(self.project_codeql_db_path):
+        candidate_db = f"{CODEQL_DB_PATH}/{self.project_name}/db-cpp"
+        if os.path.exists(f"{CODEQL_DB_PATH}/{self.project_name}/codeql-database.yml"):
+            candidate_db = f"{CODEQL_DB_PATH}/{self.project_name}"
+        self.project_codeql_db_path = candidate_db
+        if not os.path.exists(f"{self.project_codeql_db_path}/codeql-database.yml"):
             if not self.no_logger:
                 self.master_logger.info(f"Processing {self.project_name} (Query: {self.query}, Trial: {self.run_id})...")
                 self.master_logger.error(f"==> Cannot find CodeQL database for {self.project_name}; aborting")
@@ -1142,7 +1151,8 @@ dependencies:
         #     source_enclosing_func = self.find_enclosing_declaration(source_start_line, source_start_line, project_methods[source_file_url])
 
         snk_line = self.get_source_line(locations[-1])
-        if ".println(" in snk_line or ".print(" in snk_line:
+        # Ignore pure logging/printing to reduce noise for C/C++.
+        if "printf(" in snk_line or "fprintf(" in snk_line or "puts(" in snk_line:
             return False
 
         for loc in locations:
@@ -1353,6 +1363,8 @@ if __name__ == '__main__':
     parser.add_argument("--debug-source", action="store_true")
     parser.add_argument("--debug-sink", action="store_true")
     parser.add_argument("--test-run", action="store_true")
+    parser.add_argument("--cve-id", type=str, default=None)
+    parser.add_argument("--cwe-id", type=str, default=None, help="Override CWE ID (defaults to query-defined)")
     args = parser.parse_args()
 
     # Set basic properties
@@ -1377,6 +1389,7 @@ if __name__ == '__main__':
         filter_by_module_large=args.filter_by_module_large,
         posthoc_filtering_skip_fp=args.posthoc_filtering_skip_fp,
         posthoc_filtering_rerun_skipped_fp=args.posthoc_filtering_rerun_skipped_fp,
+        cve_id=args.cve_id,
         evaluation_only=args.evaluation_only,
         overwrite=args.overwrite,
         overwrite_api_candidates=args.overwrite_api_candidates,

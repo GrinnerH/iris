@@ -11,7 +11,7 @@ QUERIES = {
       "cwe-queries/cwe-120-cpp/MyBufferOverflowFlow.qll",
     ],
     "prompts": {
-      "cwe_id": "CWE-120",
+      "cwe_id": "120",
       "desc": "Buffer copy without checking size",
       "long_desc": """\
 Focus on C/C++ buffer copies where size/index is derived from untrusted data and used without bounds checks. \
@@ -58,7 +58,7 @@ Guard conditions like length comparisons should downgrade risk; missing or incor
       "cwe-queries/cwe-787-cpp/MyBufferOverflowFlow.qll",
     ],
     "prompts": {
-      "cwe_id": "CWE-787",
+      "cwe_id": "787",
       "desc": "Out-of-bounds read/write",
       "long_desc": """\
 Detect flows where attacker-influenced indexes or lengths reach array access, pointer arithmetic, or memcpy-style operations without proper bounds checks. \

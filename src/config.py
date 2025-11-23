@@ -4,13 +4,15 @@ IRIS_ROOT_DIR = os.path.join(os.path.dirname(__file__), "..")
 
 
 # CODEQL_DIR should be the path of the patched version of CodeQL provided as a download in the releases section for Iris.
-CODEQL_DIR = f"{IRIS_ROOT_DIR}/codeql"
+# CODEQL_DIR = f"{IRIS_ROOT_DIR}/codeql"
+CODEQL_DIR = "/mnt/d/Work_space/codeql"
+
 
 # CODEQL_DB_PATH is the path to the directory that contains CodeQL databases (C/C++).
 CODEQL_DB_PATH = f"{IRIS_ROOT_DIR}/data/codeql-dbs-cpp"
 
 # PROJECT_SOURCE_CODE_DIR contains the C/C++ projects (default to SQLite source).
-PROJECT_SOURCE_CODE_DIR = f"{IRIS_ROOT_DIR}/data/sqlite-src"
+PROJECT_SOURCE_CODE_DIR = f"{IRIS_ROOT_DIR}/data/code-src"
 
 # PACKAGE_MODULES_PATH contains each project's internal modules. 
 PACKAGE_MODULES_PATH = f"{IRIS_ROOT_DIR}/data/package-names"

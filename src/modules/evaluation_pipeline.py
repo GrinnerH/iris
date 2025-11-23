@@ -171,13 +171,13 @@ class EvaluationPipeline:
         # }
 
         def is_println(loc):
-            # line = self.get_source_line(loc)
-            # if ".println(" in line or ".print(" in line: return True
+            msg = loc['location']['message']['text']
+            if "printf" in msg or "fprintf" in msg or "puts(" in msg: return True
             return False
 
         def ignore_location(loc):
             if "toString" in loc['location']['message']['text']: return True
-            if "println" in loc['location']['message']['text']: return True
+            if "printf" in loc['location']['message']['text'] or "fprintf" in loc['location']['message']['text'] or "puts(" in loc['location']['message']['text']: return True
             # if "... + ..." in loc['location']['message']['text']: return True
             # if "next(" in loc['location']['message']['text']: return True
             # if "getOptionValue(" in loc['location']['message']['text']: return True

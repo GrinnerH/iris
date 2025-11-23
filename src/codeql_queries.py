@@ -44,7 +44,7 @@ QL_METHOD_CALL_SOURCE_BODY_ENTRY = """\
     exists(FunctionCall fc |
         src.asExpr() = fc and
         fc.getTarget().hasName("{method}") and
-        fc.getTarget().getFile().getRelativePath() = "{package}"
+        fc.getFile().getRelativePath() = "{package}"
     )\
 """
 
@@ -63,7 +63,7 @@ QL_SUMMARY_BODY_ENTRY = """\
     exists(FunctionCall c |
         (c.getArgument(_) = prev.asExpr()) and
         c.getTarget().hasName("{method}") and
-        c.getTarget().getFile().getRelativePath() = "{package}" and
+        c.getFile().getRelativePath() = "{package}" and
         c = next.asExpr()
     )\
 """
@@ -71,7 +71,7 @@ QL_SUMMARY_BODY_ENTRY = """\
 QL_SINK_BODY_ENTRY = """\
     exists(FunctionCall c |
         c.getTarget().hasName("{method}") and
-        c.getTarget().getFile().getRelativePath() = "{package}" and
+        c.getFile().getRelativePath() = "{package}" and
         ({args})
     )\
 """

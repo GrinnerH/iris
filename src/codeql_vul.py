@@ -14,11 +14,13 @@ import random
 import requests
 from tqdm import tqdm
 from tqdm.contrib.concurrent import thread_map
+from dotenv import load_dotenv
 
 THIS_SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 NEUROSYMSA_ROOT_DIR = os.path.abspath(f"{THIS_SCRIPT_DIR}/../")
 sys.path.append(NEUROSYMSA_ROOT_DIR)
 
+load_dotenv()
 from src.config import CODEQL_DIR, CODEQL_DB_PATH, OUTPUT_DIR, ALL_METHOD_INFO_DIR, PROJECT_SOURCE_CODE_DIR, CVES_MAPPED_W_COMMITS_DIR, CODEQL_QUERY_VERSION, IRIS_ROOT_DIR
 
 
@@ -78,8 +80,11 @@ class CodeQLSAPipeline:
         self.project_output_path = f"{OUTPUT_DIR}/{self.project_name}/common"
 
         # Setup codeql database path
-        self.project_codeql_db_path = f"{CODEQL_DB_PATH}/{self.project_name}/db-cpp"
-        if not os.path.exists(self.project_codeql_db_path):
+        candidate_db = f"{CODEQL_DB_PATH}/{self.project_name}/db-cpp"
+        if os.path.exists(f"{CODEQL_DB_PATH}/{self.project_name}/codeql-database.yml"):
+            candidate_db = f"{CODEQL_DB_PATH}/{self.project_name}"
+        self.project_codeql_db_path = candidate_db
+        if not os.path.exists(f"{self.project_codeql_db_path}/codeql-database.yml"):
             self.master_logger.info(f"Processing {self.project_name} (Query: {self.query}...")
             self.master_logger.error(f"==> Cannot find CodeQL database for {self.project_name}; aborting"); exit(1)
 

@@ -591,7 +591,7 @@ class ContextualAnalysisPipeline:
         last_location = code_flow[-1]
         def has_to_string(loc):
             if "toString" in loc['message']: return True
-            if "println" in loc['message']: return True
+            if "printf" in loc['message'] or "fprintf" in loc['message'] or "puts(" in loc['message']: return True
             if "... + ..." in loc['message']: return True
             if "next(" in loc['message']: return True
             if "getOptionValue(" in loc['message']: return True

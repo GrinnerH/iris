@@ -1,3 +1,5 @@
+codeql-dbs-cpp/
+code-src/
 output/
 **/__pycache__
 **/target
