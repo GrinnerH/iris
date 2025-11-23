@@ -1,14 +1,11 @@
 import cpp
 
-from VariableAccess va, Variable v
+from FieldAccess fa, ClassField f
 where
-  va.getTarget() = v and
-  v.fromSource()
+  fa.getTarget() = f and
+  f.fromSource()
 select
-  va as fieldread,
-  v as field,
-  "Global" as clazz,
-  va.getFile().getRelativePath() as package,
-  va.getFile() as file,
-  va.getLocation().toString() as location
-
+  fa as fieldread,
+  f as field,
+  fa.getFile().getRelativePath() as file_path,
+  fa.getLocation().toString() as location
