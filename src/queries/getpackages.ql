@@ -1,4 +1,4 @@
-import java
-from Package p
-where p.fromSource()
-select p, p.getName()
+import cpp
+from File f
+where f.isSourceFile()
+select f, f.getRelativePath()

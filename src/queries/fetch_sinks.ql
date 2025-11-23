@@ -1,6 +1,6 @@
-import java
-import semmle.code.java.dataflow.DataFlow
-private import semmle.code.java.dataflow.ExternalFlow
+import cpp
+import semmle.code.cpp.dataflow.DataFlow
+private import semmle.code.cpp.dataflow.ExternalFlow
 
 import MySinks
 

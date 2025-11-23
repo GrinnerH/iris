@@ -78,8 +78,8 @@ class CodeQLSAPipeline:
         self.project_output_path = f"{OUTPUT_DIR}/{self.project_name}/common"
 
         # Setup codeql database path
-        self.project_codeql_db_path = f"{CODEQL_DB_PATH}/{self.project_name}"
-        if not os.path.exists(f"{self.project_codeql_db_path}/db-java"):
+        self.project_codeql_db_path = f"{CODEQL_DB_PATH}/{self.project_name}/db-cpp"
+        if not os.path.exists(self.project_codeql_db_path):
             self.master_logger.info(f"Processing {self.project_name} (Query: {self.query}...")
             self.master_logger.error(f"==> Cannot find CodeQL database for {self.project_name}; aborting"); exit(1)
 
@@ -105,7 +105,7 @@ class CodeQLSAPipeline:
             "analyze",
             self.project_codeql_db_path,
             f"--output={self.query_output_result_sarif_path}",
-            f"{CODEQL_DIR}/qlpacks/codeql/java-queries/{CODEQL_QUERY_VERSION}/{exp}Security/CWE/CWE-{self.cwe_id}/"
+            f"{CODEQL_DIR}/qlpacks/codeql/cpp-queries/{CODEQL_QUERY_VERSION}/{exp}Security/CWE/CWE-{self.cwe_id}/"
         ]
 
         if self.overwrite:

@@ -1,61 +1,47 @@
-import java
+import cpp
 
-predicate isExternallCall(Call c) {
-    (
-        not c.getCallee().getDeclaringType().getPackage().getName().matches("org.junit%") and
-        not c.getCallee().getDeclaringType().getPackage().getName().matches("org.hamcrest%") and
-        not c.getCallee().getDeclaringType().getPackage().getName().matches("org.mockito%") and
-        not c.getCallee().getDeclaringType().getPackage().getName().matches("junit.framework%")
-    )
+predicate isExternalCall(FunctionCall c) {
+  // Skip obvious test helpers; keep libc-style memory operations.
+  not c.getTarget().hasName("assert") and
+  not c.getTarget().getQualifiedName().matches("testing::%")
 }
 
-bindingset[m]
-string fullSignature(Callable m) {
-    if m instanceof Constructor
-    then
-        result = m.getName() + "(" + concat(int i | i = [0 .. m.getNumberOfParameters()] | m.getParameter(i).getType().getName() + " " + m.getParameter(i).getName(), ", "  order by i asc)  + ")"
-    else
-        result = m.getReturnType().getName() + " " + m.getName() + "(" + concat(int i | i = [0 .. m.getNumberOfParameters()] | m.getParameter(i).getType().getName() + " " + m.getParameter(i).getName(), ", "  order by i asc)  + ")"
+bindingset[f]
+string fullSignature(Function f) {
+  result = f.getReturnType().toString() + " " + f.getName() + "(" +
+    concat(Parameter p |
+      p.getFunction() = f |
+      p.getType().toString() + " " + p.getName(), ", " order by p.getIndex() asc) + ")"
 }
 
-bindingset[m]
-string paramTypes(Callable m) {
-    result = concat(int i | i = [0 .. m.getNumberOfParameters()] | m.getParameter(i).getType().getName(), ";" order by i asc)
+bindingset[f]
+string paramTypes(Function f) {
+  result = concat(Parameter p |
+    p.getFunction() = f |
+    p.getType().toString(), ";" order by p.getIndex() asc)
 }
 
+string isStaticAsString(Function f) { result = "false" }
 
-string isStaticAsString(Callable m) {
-    if m.isStatic()
-    then result = "true"
-    else result = "false"
-}
-
-bindingset[m]
-string getJavadocString(Callable m) {
-    (
-        exists(Javadoc d | m.getDoc().getJavadoc() = d) and
-        result = concat(int i | i = [0 .. m.getDoc().getJavadoc().getNumChild()] | m.getDoc().getJavadoc().getChild(i).getText(), " " order by i asc)
-    )
-    or
-    result = ""
-}
+bindingset[f]
+string getDocString(Function f) { result = "" }
 
 from
-    Call api
+  FunctionCall api,
+  Function target
 where
-    isExternallCall(api) and
-    api.getCallee().getStringSignature() != "()" and
-    api.getCallee().getDeclaringType().getSourceDeclaration().getName() != "Object"
+  api.getTarget() = target and
+  isExternalCall(api)
 select
-    api as callstr,
-    api.getCallee().getDeclaringType().getSourceDeclaration().getPackage() as package,
-    api.getCallee().getDeclaringType().getSourceDeclaration() as clazz,
-    fullSignature(api.getCallee()) as full_signature,
-    api.getCallee().getStringSignature() as internal_signature,
-    api.getCallee() as func,
-    isStaticAsString(api.getCallee()) as is_static,
-    api.getFile() as file,
-    api.getLocation().toString() as location,
-    paramTypes(api.getCallee()) as parameter_types,
-    api.getCallee().getReturnType().getName() as return_type,
-    getJavadocString(api.getCallee()) as doc
+  api as callstr,
+  api.getFile().getRelativePath() as package,
+  "Global" as clazz,
+  fullSignature(target) as full_signature,
+  target.getSignature() as internal_signature,
+  target as func,
+  isStaticAsString(target) as is_static,
+  api.getFile() as file,
+  api.getLocation().toString() as location,
+  paramTypes(target) as parameter_types,
+  target.getReturnType().toString() as return_type,
+  getDocString(target) as doc

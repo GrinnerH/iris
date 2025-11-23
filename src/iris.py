@@ -45,11 +45,16 @@ CODEQL = f"{CODEQL_DIR}/codeql"
 PRIMITIVE_TYPES = set([
     "void",
     "int",
-    "boolean",
     "long",
-    "Integer",
-    "Boolean",
-    "Object",
+    "short",
+    "size_t",
+    "ssize_t",
+    "char",
+    "unsigned",
+    "bool",
+    "double",
+    "float",
+    "wchar_t",
 ])
 
 MAX_DOC_LENGTH = 50
@@ -156,12 +161,12 @@ class SAPipeline:
         self.fixed_methods = pd.read_csv(ALL_METHOD_INFO_DIR)
         self.project_fixed_methods = self.fixed_methods[self.fixed_methods["project_slug"] == self.project_name]
         self.project_fixed_modules = self.project_fixed_methods[
-            self.project_fixed_methods["file"].str.contains("src/main") &
-            self.project_fixed_methods["file"].str.endswith(".java")]
+            self.project_fixed_methods["file"].str.contains("src/") &
+            (self.project_fixed_methods["file"].str.endswith(".c") | self.project_fixed_methods["file"].str.endswith(".cc") | self.project_fixed_methods["file"].str.endswith(".cpp"))]
         self.fixed_modules = self.project_fixed_modules \
             .apply(lambda f: \
                 pd.Series([
-                    f["file"][:f["file"].index("src/main") - 1] if f["file"].index("src/main") > 1 else ""
+                    f["file"][:f["file"].index("src/") - 1] if f["file"].index("src/") > 1 else ""
                 ], index=["module"]), axis=1, result_type="expand") \
             .drop_duplicates()
 
@@ -169,8 +174,8 @@ class SAPipeline:
         self.project_output_path = f"{OUTPUT_DIR}/{self.project_name}/{self.run_id}"
 
         # Setup codeql database path
-        self.project_codeql_db_path = f"{CODEQL_DB_PATH}/{self.project_name}"
-        if not os.path.exists(f"{self.project_codeql_db_path}/db-java"):
+        self.project_codeql_db_path = f"{CODEQL_DB_PATH}/{self.project_name}/db-cpp"
+        if not os.path.exists(self.project_codeql_db_path):
             if not self.no_logger:
                 self.master_logger.info(f"Processing {self.project_name} (Query: {self.query}, Trial: {self.run_id})...")
                 self.master_logger.error(f"==> Cannot find CodeQL database for {self.project_name}; aborting")
@@ -264,8 +269,8 @@ class SAPipeline:
 name: iris
 version: 1.0.0
 dependencies:
-  codeql/java-all: "*"
-  codeql/java-queries: "*"
+  codeql/cpp-all: "*"
+  codeql/cpp-queries: "*"
 """
         qlpack_path = f"{self.custom_codeql_root}/qlpack.yml"
         os.makedirs(self.custom_codeql_root, exist_ok=True)
@@ -282,12 +287,18 @@ dependencies:
         runner.run(query, target_csv_path, suffix, dyn_queries)
 
     def keep_external_packages(self, api_candidates_df):
-        packages = open(f"{PACKAGE_MODULES_PATH}/{self.project_name}.txt").readlines()
+        package_file = f"{PACKAGE_MODULES_PATH}/{self.project_name}.txt"
+        if not os.path.exists(package_file):
+            return api_candidates_df
+        packages = open(package_file).readlines()
         packages = [p.strip() for p in packages]
         return api_candidates_df[~api_candidates_df["package"].isin(packages)]
 
     def keep_internal_packages(self, api_candidates_df):
-        packages = open(f"{PACKAGE_MODULES_PATH}/{self.project_name}.txt").readlines()
+        package_file = f"{PACKAGE_MODULES_PATH}/{self.project_name}.txt"
+        if not os.path.exists(package_file):
+            return api_candidates_df
+        packages = open(package_file).readlines()
         packages = [p.strip() for p in packages]
         return api_candidates_df[api_candidates_df["package"].isin(packages)]
 
@@ -310,7 +321,8 @@ dependencies:
         1. static method with at least one non-trivial parameter
         2. non-static method
         """
-        if row["is_static"]:
+        is_static = str(row["is_static"]).lower() == "true"
+        if is_static:
             param_types_raw = "" if type(row["parameter_types"]) == float else row["parameter_types"]
             param_types = param_types_raw.split(";")
             return any(param_ty not in PRIMITIVE_TYPES for param_ty in param_types)
@@ -319,12 +331,11 @@ dependencies:
 
     def api_candidate_not_on_blacklist(self, external_api_candidate_row):
         row = external_api_candidate_row
-        if row["package"] == "java.util" and row["clazz"] == "String": return False
-        if row["package"] == "java.util" and row["clazz"] == "EnumSet": return False
-        if row["package"] == "java.util" and row["clazz"] == "LinkedList": return False
-        if row["package"] == "java.util" and row["clazz"] == "List": return False
-        if row["package"] == "java.io" and row["clazz"] == "PrintStream": return False
-        else: return True
+        benign_funcs = {"sin", "cos", "sqrt", "pow", "fabs"}
+        func_name = str(row["func"])
+        if func_name in benign_funcs:
+            return False
+        return True
 
     def api_is_candidate(self, candidate, num_external_apis):
         if self.api_candidate_not_on_blacklist(candidate):

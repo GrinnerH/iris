@@ -1,12 +1,11 @@
-import java
+import cpp
 
 from
-  RefType c
+  File f
 where
-  c.fromSource() and
-  c.getName() != ""
+  f.isSourceFile()
 select
-  c.getName() as name,
-  c.getFile().getRelativePath() as file,
-  c.getLocation().getStartLine() as start_line,
-  c.getLocation().getEndLine() + c.getTotalNumberOfLines() as end_line
+  "Global" as name,
+  f.getRelativePath() as file,
+  1 as start_line,
+  f.getNumberOfLines() as end_line
